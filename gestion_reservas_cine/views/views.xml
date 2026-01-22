@@ -1,60 +1,111 @@
 <odoo>
   <data>
-    <!-- explicit list view definition -->
-<!--
-    <record model="ir.ui.view" id="gestion_reservas_cine.list">
-      <field name="name">gestion_reservas_cine list</field>
-      <field name="model">gestion_reservas_cine.gestion_reservas_cine</field>
-      <field name="arch" type="xml">
-        <tree>
-          <field name="name"/>
-          <field name="value"/>
-          <field name="value2"/>
-        </tree>
-      </field>
-    </record>
--->
 
-    <!-- actions opening views on models -->
-<!--
-    <record model="ir.actions.act_window" id="gestion_reservas_cine.action_window">
-      <field name="name">gestion_reservas_cine window</field>
-      <field name="res_model">gestion_reservas_cine.gestion_reservas_cine</field>
-      <field name="view_mode">tree,form</field>
+    <record id="view_booking_form" model="ir.ui.view">
+        <field name="name">res.booking.form</field>
+        <field name="model">res.booking</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_confirm" string="Confirmar" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_cancel" string="Cancelar" type="object" invisible="state == 'canceled'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="client_id"/>
+                            <field name="service_id"/>
+                        </group>
+                        <group>
+                            <field name="booking_datetime"/>
+                            <field name="calculated_price"/>
+                            <field name="invoice_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
     </record>
--->
 
-    <!-- server action to the one above -->
-<!--
-    <record model="ir.actions.server" id="gestion_reservas_cine.action_server">
-      <field name="name">gestion_reservas_cine server</field>
-      <field name="model_id" ref="model_gestion_reservas_cine_gestion_reservas_cine"/>
-      <field name="state">code</field>
-      <field name="code">
-        action = {
-          "type": "ir.actions.act_window",
-          "view_mode": "tree,form",
-          "res_model": model._name,
-        }
-      </field>
+    <record id="view_booking_tree" model="ir.ui.view">
+        <field name="name">res.booking.tree</field>
+        <field name="model">res.booking</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state == 'draft'" decoration-success="state == 'confirmed'" decoration-muted="state == 'canceled'">
+                <field name="booking_datetime"/>
+                <field name="client_id"/>
+                <field name="service_id"/>
+                <field name="calculated_price"/>
+                <field name="state"/>
+            </tree>
+        </field>
     </record>
--->
 
-    <!-- Top menu item -->
-<!--
-    <menuitem name="gestion_reservas_cine" id="gestion_reservas_cine.menu_root"/>
--->
-    <!-- menu categories -->
-<!--
-    <menuitem name="Menu 1" id="gestion_reservas_cine.menu_1" parent="gestion_reservas_cine.menu_root"/>
-    <menuitem name="Menu 2" id="gestion_reservas_cine.menu_2" parent="gestion_reservas_cine.menu_root"/>
--->
-    <!-- actions -->
-<!--
-    <menuitem name="List" id="gestion_reservas_cine.menu_1_list" parent="gestion_reservas_cine.menu_1"
-              action="gestion_reservas_cine.action_window"/>
-    <menuitem name="Server to list" id="gestion_reservas_cine" parent="gestion_reservas_cine.menu_2"
-              action="gestion_reservas_cine.action_server"/>
--->
+    <record id="view_service_form" model="ir.ui.view">
+        <field name="name">res.service.form</field>
+        <field name="model">res.service</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="price"/>
+                        <field name="duration"/>
+                        <field name="availability"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_booking" model="ir.actions.act_window">
+        <field name="name">Reservas</field>
+        <field name="res_model">res.booking</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_service" model="ir.actions.act_window">
+        <field name="name">Servicios</field>
+        <field name="res_model">res.service</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_partner_form_inherit_vip" model="ir.ui.view">
+        <field name="name">res.partner.form.vip</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//notebook" position="before">
+                <group>
+                    <group>
+                        <field name="is_vip" widget="boolean_toggle"/> 
+                    </group>
+                </group>
+            </xpath>
+            
+            <xpath expr="//notebook" position="inside">
+                <page string="Historial Cine">
+                    <field name="booking_history">
+                        <tree decoration-info="state == 'draft'" decoration-muted="state == 'canceled'">
+                            <field name="service_id"/>
+                            <field name="booking_datetime"/>
+                            <field name="calculated_price"/>
+                            <field name="state"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <menuitem id="menu_gestion_reservas_root" name="Gestión Reservas Cine" web_icon="gestion_reservas_cine,static/description/icon.png"/>
+    
+    <menuitem id="menu_bookings" name="Reservas" parent="menu_gestion_reservas_root" action="action_booking"/>
+    <menuitem id="menu_services" name="Servicios" parent="menu_gestion_reservas_root" action="action_service"/>
+
   </data>
 </odoo>
