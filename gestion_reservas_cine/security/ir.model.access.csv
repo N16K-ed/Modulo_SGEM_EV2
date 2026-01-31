@@ -1,2 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_gestion_reservas_cine_gestion_reservas_cine,gestion_reservas_cine.gestion_reservas_cine,model_gestion_reservas_cine_gestion_reservas_cine,base.group_user,1,1,1,1
+access_res_service_client,res.service.client,model_res_service,group_booking_client,1,0,0,0
+access_res_service_manager,res.service.manager,model_res_service,group_booking_manager,1,1,1,1
+access_res_booking_client,res.booking.client,model_res_booking,group_booking_client,1,1,1,0
+access_res_booking_manager,res.booking.manager,model_res_booking,group_booking_manager,1,1,1,1

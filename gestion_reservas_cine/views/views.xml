@@ -1,6 +1,5 @@
 <odoo>
   <data>
-
     <record id="view_booking_form" model="ir.ui.view">
         <field name="name">res.booking.form</field>
         <field name="model">res.booking</field>
@@ -14,13 +13,14 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="client_id"/>
-                            <field name="service_id"/>
+                            <field name="can_edit_client" invisible="1"/>
+                            <field name="client_id" options="{'no_create': True}" readonly="not can_edit_client" force_save="1"/>
+                            <field name="service_id" options="{'no_create': True}"/>
                         </group>
                         <group>
                             <field name="booking_datetime"/>
-                            <field name="calculated_price"/>
-                            <field name="invoice_id"/>
+                            <field name="calculated_price" readonly="1"/>
+                            <field name="invoice_id" readonly="1" invisible="not invoice_id"/>
                         </group>
                     </group>
                 </sheet>
@@ -42,7 +42,7 @@
         </field>
     </record>
 
-    <record id="view_service_form" model="ir.ui.view">
+   <record id="view_service_form" model="ir.ui.view">
         <field name="name">res.service.form</field>
         <field name="model">res.service</field>
         <field name="arch" type="xml">
@@ -60,10 +60,26 @@
         </field>
     </record>
 
+    <record id="view_booking_calendar" model="ir.ui.view">
+        <field name="name">res.booking.calendar</field>
+        <field name="model">res.booking</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendario de Reservas" 
+                      date_start="booking_datetime" 
+                      color="state"
+                      mode="month"
+                      quick_create="0">
+                <field name="client_id"/>
+                <field name="service_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
     <record id="action_booking" model="ir.actions.act_window">
         <field name="name">Reservas</field>
         <field name="res_model">res.booking</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,calendar</field>
     </record>
 
     <record id="action_service" model="ir.actions.act_window">
@@ -81,13 +97,15 @@
             <xpath expr="//notebook" position="before">
                 <group>
                     <group>
-                        <field name="is_vip" widget="boolean_toggle"/> 
+                        <!-- Solo Managers pueden modificar VIP, evitando errores de permisos en cascada -->
+                        <field name="is_vip" widget="boolean_toggle" groups="gestion_reservas_cine.group_booking_manager"/> 
                     </group>
                 </group>
             </xpath>
             
             <xpath expr="//notebook" position="inside">
-                <page string="Historial Cine">
+                <!-- Solo usuarios del grupo Cine pueden ver el historial, evitando errores de acceso -->
+                <page string="Historial Cine" groups="gestion_reservas_cine.group_booking_client">
                     <field name="booking_history">
                         <tree decoration-info="state == 'draft'" decoration-muted="state == 'canceled'">
                             <field name="service_id"/>
@@ -98,14 +116,22 @@
                     </field>
                 </page>
             </xpath>
-
         </field>
+    </record>
+
+    <record id="action_partner_client" model="ir.actions.act_window">
+        <field name="name">Clientes</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('customer_rank', '>', 0)]</field>
+        <field name="context">{'default_customer_rank': 1}</field>
     </record>
 
     <menuitem id="menu_gestion_reservas_root" name="Gestión Reservas Cine" web_icon="gestion_reservas_cine,static/description/icon.png"/>
     
-    <menuitem id="menu_bookings" name="Reservas" parent="menu_gestion_reservas_root" action="action_booking"/>
-    <menuitem id="menu_services" name="Servicios" parent="menu_gestion_reservas_root" action="action_service"/>
+    <menuitem id="menu_bookings" name="Reservas" parent="menu_gestion_reservas_root" action="action_booking" sequence="10"/>
+    <menuitem id="menu_services" name="Servicios" parent="menu_gestion_reservas_root" action="action_service" sequence="20" groups="gestion_reservas_cine.group_booking_manager"/>
+    <menuitem id="menu_clients" name="Clientes" parent="menu_gestion_reservas_root" action="action_partner_client" sequence="30" groups="gestion_reservas_cine.group_booking_manager"/>
 
   </data>
 </odoo>

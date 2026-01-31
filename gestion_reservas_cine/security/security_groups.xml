@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Categoría para los grupos de Gestión de Reservas -->
+        <record id="module_category_booking_management" model="ir.module.category">
+            <field name="name">Gestión de Reservas</field>
+            <field name="description">Gestión de reservas de cine.</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Grupo: Cliente de Reservas -->
+        <record id="group_booking_client" model="res.groups">
+            <field name="name">Cliente de Reservas</field>
+            <field name="category_id" ref="module_category_booking_management"/>
+            <field name="comment">El usuario puede ver y gestionar sus propias reservas</field>
+        </record>
+
+        <!-- Grupo: Administrador de Reservas -->
+        <record id="group_booking_manager" model="res.groups">
+            <field name="name">Administrador de Reservas</field>
+            <field name="category_id" ref="module_category_booking_management"/>
+            <field name="implied_ids" eval="[(4, ref('group_booking_client'))]"/>
+            <field name="comment">El usuario puede gestionar todas las reservas, servicios y clientes</field>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

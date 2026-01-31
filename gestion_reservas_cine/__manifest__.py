@@ -25,7 +25,9 @@ integración con facturación
 
     # always loaded
     'data': [
-        # 'security/ir.model.access.csv',
+        'security/security_groups.xml',
+        'security/record_rules.xml',
+        'security/ir.model.access.csv',
         'views/views.xml',
         'views/templates.xml',
         'data/cron.xml',

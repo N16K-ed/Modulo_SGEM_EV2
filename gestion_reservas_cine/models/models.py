@@ -46,6 +46,28 @@ class Booking(models.Model):
     # Campo para relacionar con la factura creada
     invoice_id = fields.Many2one('account.move', string='Factura', readonly=True)
 
+    can_edit_client = fields.Boolean(compute='_compute_can_edit_client')
+
+    @api.depends_context('uid')
+    def _compute_can_edit_client(self):
+        user_is_manager = self.env.user.has_group('gestion_reservas_cine.group_booking_manager')
+        for record in self:
+            record.can_edit_client = user_is_manager
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super(Booking, self).default_get(fields_list)
+        if 'client_id' in fields_list and not res.get('client_id'):
+            # Asignar usuario actual como cliente por defecto
+            partner = self.env.user.partner_id
+            res['client_id'] = partner.id
+            
+            # Asegurar que el usuario sea marcado como cliente (rank > 0)
+            # Usamos sudo() por si el usuario no tiene permisos para modificar ranks
+            if partner.customer_rank == 0:
+                partner.sudo().write({'customer_rank': 1})
+        return res
+
     @api.depends('service_id.price', 'client_id.is_vip')
     def _compute_calculated_price(self):
         for record in self:
