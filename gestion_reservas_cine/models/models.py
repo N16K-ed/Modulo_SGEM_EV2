@@ -43,7 +43,6 @@ class Booking(models.Model):
     )
     calculated_price = fields.Float(string='Precio Calculado', compute='_compute_calculated_price', store=True)
 
-    # Campo para relacionar con la factura creada
     invoice_id = fields.Many2one('account.move', string='Factura', readonly=True)
 
     can_edit_client = fields.Boolean(compute='_compute_can_edit_client')
@@ -52,18 +51,20 @@ class Booking(models.Model):
     def _compute_can_edit_client(self):
         user_is_manager = self.env.user.has_group('gestion_reservas_cine.group_booking_manager')
         for record in self:
-            record.can_edit_client = user_is_manager
+            record.can_edit_client = user_is_manager and not record.id
+
+    def write(self, vals):
+        if 'client_id' in vals and not self.env.su:
+            raise ValidationError("No se puede cambiar el cliente de una reserva existente.")
+        return super(Booking, self).write(vals)
 
     @api.model
     def default_get(self, fields_list):
         res = super(Booking, self).default_get(fields_list)
         if 'client_id' in fields_list and not res.get('client_id'):
-            # Asignar usuario actual como cliente por defecto
             partner = self.env.user.partner_id
             res['client_id'] = partner.id
             
-            # Asegurar que el usuario sea marcado como cliente (rank > 0)
-            # Usamos sudo() por si el usuario no tiene permisos para modificar ranks
             if partner.customer_rank == 0:
                 partner.sudo().write({'customer_rank': 1})
         return res
@@ -73,12 +74,9 @@ class Booking(models.Model):
         for record in self:
             base_price = record.service_id.price if record.service_id else 0.0
             if record.client_id.is_vip:
-                record.calculated_price = base_price * 0.9  # 10% descuento
+                record.calculated_price = base_price * 0.9
             else:
                 record.calculated_price = base_price
-
-
-    # OBJETIVO SEMANA 2: Validaciones
 
     @api.constrains('booking_datetime')
     def _check_date(self):
@@ -92,10 +90,6 @@ class Booking(models.Model):
             if record.service_id.availability == 'unavailable':
                 raise ValidationError("El servicio seleccionado no está disponible actualmente.")
 
-
-    # OBJETIVO SEMANA 2: Acciones y Facturación
-
-
     def action_confirm(self):
         """ Cambia estado a confirmado y crea factura """
         for record in self:
@@ -103,7 +97,7 @@ class Booking(models.Model):
                 raise ValidationError("No puedes confirmar una reserva cancelada.")
 
             record.write({'state': 'confirmed'})
-            if not record.invoice_id:  # Evitar duplicar facturas
+            if not record.invoice_id:
                 record._create_invoice()
 
     def action_cancel(self):
@@ -117,7 +111,7 @@ class Booking(models.Model):
         """ Lógica interna para crear la factura en Account """
         invoice_vals = {
             'partner_id': self.client_id.id,
-            'move_type': 'out_invoice',  # Factura de cliente
+            'move_type': 'out_invoice',
             'invoice_date': fields.Date.today(),
             'invoice_line_ids': [(0, 0, {
                 'name': f"Reserva: {self.service_id.name}",
@@ -128,13 +122,8 @@ class Booking(models.Model):
         invoice = self.env['account.move'].create(invoice_vals)
         self.invoice_id = invoice.id
 
-
-    # OBJETIVO SEMANA 2: Cron Job (Cancelación automática)
-
     @api.model
     def _cron_cancel_expired_bookings(self):
-        # Buscar reservas en borrador creadas hace más de 24 horas
-        # Para probar se puede usar time_limit = fields.Datetime.now() - timedelta(minutes=1)
         time_limit = fields.Datetime.now() - timedelta(hours=24)
         expired_bookings = self.search([
             ('state', '=', 'draft'),
