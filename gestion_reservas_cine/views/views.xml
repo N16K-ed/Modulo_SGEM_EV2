@@ -20,7 +20,7 @@
                         <group>
                             <field name="booking_datetime"/>
                             <field name="calculated_price" readonly="1"/>
-                            <field name="invoice_id" readonly="1" invisible="not invoice_id"/>
+                            <field name="invoice_id" readonly="1" invisible="not invoice_id" groups="gestion_reservas_cine.group_booking_manager"/>
                         </group>
                     </group>
                 </sheet>
